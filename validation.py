@@ -47,7 +47,7 @@ def validate_week_folder(week_folder_path, expected_files):
     return present_files, missing_files
 
 # Specific week you want to check
-specific_week = "Week01"
+specific_week = "Week02"
 
 # Get current date and time
 current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -107,6 +107,8 @@ report_table = f"""
                         <th>Week</th>
                         <th>Completed Task</th>
                         <th>Pending Task</th>
+                        <th>Completion Status</th>
+                        
                     </tr>
                 </thead>
                 <tbody>
@@ -118,12 +120,18 @@ for student_id, student_name in student_data.items():
     week_folder_path = os.path.join(student_folder_path, week_folder_name)
 
     if os.path.exists(student_folder_path) and os.path.isdir(student_folder_path) and os.path.exists(week_folder_path) and os.path.isdir(week_folder_path):
-        expected_files = ["Git_task.png", "Index_File_creation.png", "Linkedin_Instagram_Twitter_added.png", "Resume_added.png"]  # List of expected files
+        expected_files = ["create_wordpress_blog_and_7articles.png", "update_linkedin_with-photo.png", "create_canva-menu.png", "download_figma_and_install.png"]  
+        # List of expected files
         
         present_files, missing_files = validate_week_folder(week_folder_path, expected_files)
         
         present_files_str = ', '.join(present_files)
         missing_files_str = ', '.join(missing_files)
+
+        if len(present_files) == len(expected_files):
+                completion_status = "Completed"
+        else:
+                completion_status = "Pending"
 
         report_table += f"""
                     <tr>
@@ -132,6 +140,7 @@ for student_id, student_name in student_data.items():
                         <td>{week_folder_name}</td>
                         <td>{present_files_str}</td>
                         <td>{missing_files_str}</td>
+                        <td>{completion_status}</td>
                     </tr>
         """
     else:
