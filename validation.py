@@ -1,14 +1,16 @@
 import os
 import datetime
+import json
 
 
 
 # Path to the parent directory containing student folders
 parent_folder_path = "Students"
 
-# Student data in the format: {student_id: student_name}
+# ... (previous part of your code)
+
+# Define the student data
 student_data = {
-    # Add more students here...
     "PPP001": "Mohamed Hasir",
     "PPP002": "Ganesh Kumar R",
     "PPP003": "Deepa N",
@@ -36,6 +38,15 @@ student_data = {
     "PPF007": "Riyas ahamed J"
 }
 
+# ... (continue with the code I provided earlier)
+
+# ... (rest of your code)
+
+
+# Load the expected files configuration
+with open("expected_files_config.json", "r") as config_file:
+    expected_files_config = json.load(config_file)
+
 def validate_week_folder(week_folder_path, expected_files):
     files_in_folder = os.listdir(week_folder_path)
     
@@ -47,7 +58,7 @@ def validate_week_folder(week_folder_path, expected_files):
     return present_files, missing_files
 
 # Specific week you want to check
-specific_week = "Week02"
+specific_week = "Week01"
 
 # Get current date and time
 current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -120,8 +131,7 @@ for student_id, student_name in student_data.items():
     week_folder_path = os.path.join(student_folder_path, week_folder_name)
 
     if os.path.exists(student_folder_path) and os.path.isdir(student_folder_path) and os.path.exists(week_folder_path) and os.path.isdir(week_folder_path):
-        expected_files = ["create_wordpress_blog_and_7articles.png", "update_linkedin_with-photo.png", "create_canva-menu.png", "download_figma_and_install.png"]  
-        # List of expected files
+        expected_files = expected_files_config.get(week_folder_name, {}).get(student_id, [])
         
         present_files, missing_files = validate_week_folder(week_folder_path, expected_files)
         
@@ -129,10 +139,9 @@ for student_id, student_name in student_data.items():
         missing_files_str = ', '.join(missing_files)
 
         if len(present_files) == len(expected_files):
-                completion_status = "Completed"
+            completion_status = "Completed"
         else:
-                completion_status = "Pending"
-
+            completion_status = "Pending"
         report_table += f"""
                     <tr>
                         <td>{student_id}</td>
