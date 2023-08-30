@@ -1,7 +1,7 @@
 import os
 import datetime
 import json
-
+import pandas as pd
 
 
 # Path to the parent directory containing student folders
@@ -38,10 +38,7 @@ student_data = {
     "PPF007": "Riyas ahamed J"
 }
 
-# ... (continue with the code I provided earlier)
-
 # ... (rest of your code)
-
 
 # Load the expected files configuration
 with open("expected_files_config.json", "r") as config_file:
@@ -57,73 +54,16 @@ def validate_week_folder(week_folder_path, expected_files):
     
     return present_files, missing_files
 
+# ... (previous part of your code)
+
 # Specific week you want to check
 specific_week = "Week01"
 
 # Get current date and time
 current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-# Create a report table with Bootstrap styling, additional CSS, and JavaScript for freezing table header
-report_table = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Weekly Report</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-        .fixed-header {{
-            position: sticky;
-            top: 0;
-            background-color: white;
-            z-index: 1;
-        }}
-        .container {{
-            max-width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }}
-        .table-container {{
-            max-height: calc(100vh - 200px); /* Adjust the value based on your needs */
-            overflow-y: auto;
-        }}
-    </style>
-    <script>
-        window.addEventListener("DOMContentLoaded", function () {{
-            var table = document.querySelector(".table");
-            var thead = table.querySelector("thead");
-
-            table.addEventListener("scroll", function () {{
-                thead.style.transform = "translateY(" + table.scrollTop + "px)";
-            }});
-        }});
-    </script>
-</head>
-<body>
-    <div class="fixed-header py-3 px-4 bg-light">
-        <div class="d-flex justify-content-between">
-            <h1 class="mb-0">Weekly Report</h1>
-            <div class="text-right">
-                <p class="mb-0">Generated: {current_datetime}</p>
-            </div>
-        </div>
-        <h2 class="mb-0">Week: {specific_week}</h2>
-    </div>
-    <div class="container mt-5">
-        <div class="table-responsive table-container">
-            <table class="table table-bordered">
-                <thead class="thead-dark">
-                    <tr>
-                        <th>Student ID</th>
-                        <th>Student Name</th>
-                        <th>Week</th>
-                        <th>Completed Task</th>
-                        <th>Pending Task</th>
-                        <th>Completion Status</th>
-                        
-                    </tr>
-                </thead>
-                <tbody>
-"""
+# Create a list to store report data
+report_data = []
 
 for student_id, student_name in student_data.items():
     student_folder_path = os.path.join(parent_folder_path, f"{student_id} - {student_name}")
@@ -142,42 +82,48 @@ for student_id, student_name in student_data.items():
             completion_status = "Completed"
         else:
             completion_status = "Pending"
-        report_table += f"""
-                    <tr>
-                        <td>{student_id}</td>
-                        <td>{student_name}</td>
-                        <td>{week_folder_name}</td>
-                        <td>{present_files_str}</td>
-                        <td>{missing_files_str}</td>
-                        <td>{completion_status}</td>
-                    </tr>
-        """
+        
+        report_data.append([student_id, student_name, week_folder_name, present_files_str, missing_files_str, completion_status])
     else:
-        report_table += f"""
-                    <tr>
-                        <td>{student_id}</td>
-                        <td>{student_name}</td>
-                        <td>{week_folder_name}</td>
-                        <td colspan="2">Folder or data not found</td>
-                    </tr>
-        """
+        report_data.append([student_id, student_name, week_folder_name, "Folder or data not found", "", ""])
 
-report_table += """
-                </tbody>
-            </table>
-        </div>
-    </div>
-</body>
-</html>
-"""
+# Convert the report_data list to a pandas DataFrame
+report_df = pd.DataFrame(report_data, columns=["Student ID", "Student Name", "Week", "Completed Task", "Pending Task", "Completion Status"])
 
-# Save report to a file
-report_filename = f"{specific_week}_report.html"
-with open(report_filename, "w") as report_file:
-    report_file.write(report_table)
+# Save DataFrame to an Excel file
+report_excel_filename = f"{specific_week}_report.xlsx"
 
-# Print a message indicating HTML report generation
-print(f"HTML report generated: {report_filename}")
+# Create a Pandas Excel writer using XlsxWriter as the engine
+with pd.ExcelWriter(report_excel_filename, engine='xlsxwriter') as writer:
+    # Write the DataFrame data to XlsxWriter
+    report_df.to_excel(writer, sheet_name='Report', index=False)
+    
+    # Get the xlsxwriter workbook and worksheet objects
+    workbook = writer.book
+    worksheet = writer.sheets['Report']
 
+    # Add a header format.
+    header_format = workbook.add_format({
+        'bold': True,
+        'text_wrap': True,
+        'valign': 'top',
+        'fg_color': '#007bff',
+        'font_color': 'white',
+        'border': 1
+    })
 
-#testing
+    # Set the column widths and apply the header format.
+    for col_num, value in enumerate(report_df.columns.values):
+        worksheet.write(0, col_num, value, header_format)
+        column_len = max(report_df[value].astype(str).apply(len).max(), len(value))
+        col_width = column_len + 2
+        worksheet.set_column(col_num, col_num, col_width)
+    
+    # Add the specific week to the worksheet
+    worksheet.write(len(report_df) + 2, 0, f'Week: {specific_week}')
+    
+    # Add the current date and time to the worksheet
+    worksheet.write(len(report_df) + 3, 0, f'Generated: {current_datetime}')
+    
+# Print a message indicating Excel report generation
+print(f"Excel report generated: {report_excel_filename}")
