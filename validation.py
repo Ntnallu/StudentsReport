@@ -44,15 +44,14 @@ student_data = {
 with open("expected_files_config.json", "r") as config_file:
     expected_files_config = json.load(config_file)
 
+# Function to validate week folder contents
 def validate_week_folder(week_folder_path, expected_files):
     files_in_folder = os.listdir(week_folder_path)
-    
     files_in_folder_stripped = [f.strip() for f in files_in_folder]
-    
     present_files = [file for file in expected_files if any(file.lower() == f.lower() for f in files_in_folder_stripped)]
     missing_files = [file for file in expected_files if not any(file.lower() == f.lower() for f in files_in_folder_stripped)]
-    
     return present_files, missing_files
+
 
 # ... (previous part of your code)
 
@@ -60,7 +59,8 @@ def validate_week_folder(week_folder_path, expected_files):
 specific_week = "Week01"
 
 # Get current date and time
-current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+current_datetime = datetime.datetime.now()
+current_datetime_str = current_datetime.strftime("%Y-%m-%d %I:%M:%S %p")  # Format with AM/PM
 
 # Create a list to store report data
 report_data = []
@@ -72,23 +72,18 @@ for student_id, student_name in student_data.items():
 
     if os.path.exists(student_folder_path) and os.path.isdir(student_folder_path) and os.path.exists(week_folder_path) and os.path.isdir(week_folder_path):
         expected_files = expected_files_config.get(week_folder_name, {}).get(student_id, [])
-        
         present_files, missing_files = validate_week_folder(week_folder_path, expected_files)
-        
-        present_files_str = ', '.join(present_files)
         missing_files_str = ', '.join(missing_files)
-
         if len(present_files) == len(expected_files):
             completion_status = "Completed"
         else:
             completion_status = "Pending"
-        
-        report_data.append([student_id, student_name, week_folder_name, present_files_str, missing_files_str, completion_status])
+        report_data.append([student_id, student_name, week_folder_name, missing_files_str, completion_status])
     else:
         report_data.append([student_id, student_name, week_folder_name, "Folder or data not found", "", ""])
 
 # Convert the report_data list to a pandas DataFrame
-report_df = pd.DataFrame(report_data, columns=["Student ID", "Student Name", "Week", "Completed Task", "Pending Task", "Completion Status"])
+report_df = pd.DataFrame(report_data, columns=["Student ID", "Student Name", "Week", "Pending Task", "Completion Status"])
 
 # Save DataFrame to an Excel file
 report_excel_filename = f"{specific_week}_report.xlsx"
@@ -123,7 +118,16 @@ with pd.ExcelWriter(report_excel_filename, engine='xlsxwriter') as writer:
     worksheet.write(len(report_df) + 2, 0, f'Week: {specific_week}')
     
     # Add the current date and time to the worksheet
-    worksheet.write(len(report_df) + 3, 0, f'Generated: {current_datetime}')
+    worksheet.write(len(report_df) + 3, 0, f'Generated: {current_datetime_str}')
+    
+    # Add cell formats for completed students' names and statuses (green background, white text)
+    green_format = workbook.add_format({'bg_color': 'green', 'font_color': 'white', 'bold': True})
+
+    # Iterate through the DataFrame to format cells based on completion status
+    for row_num, completion_status in enumerate(report_df["Completion Status"]):
+        if completion_status == "Completed":
+            worksheet.write(row_num + 1, 1, report_df.at[row_num, "Student Name"], green_format)
+            worksheet.write(row_num + 1, 4, completion_status, green_format)
     
 # Print a message indicating Excel report generation
 print(f"Excel report generated: {report_excel_filename}")
